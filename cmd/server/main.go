@@ -12,6 +12,7 @@ func main() {
 
 	// Set up the POST /repositories endpoint
 	r.POST("/repositories", api.CreateRepository)
+	r.GET("/repositories", api.ListRepositories)
 
 	log.Println("Server starting on port 8080...")
 	log.Fatal(r.Run(":8080")) // Start the server on port 8080
