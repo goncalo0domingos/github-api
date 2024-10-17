@@ -89,7 +89,6 @@ func ListRepositories(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response_repo)
-
 }
 
 func listRepoOnGitHub(token string) ([]map[string]interface{}, error) {
@@ -120,5 +119,47 @@ func listRepoOnGitHub(token string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 	return repos, nil
+}
 
+func DeleteRepository(c *gin.Context) {
+
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token required"})
+		return
+	}
+	owner := c.Param("owner")
+	repoName := c.Param("repo")
+
+	if err := deleteRepoOnGithub(token, repoName, owner); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+
+	c.JSON(http.StatusNoContent, nil)
+}
+
+func deleteRepoOnGithub(token, repoName, owner string) error {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repoName)
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("failed to delete repository: status code %d", resp.StatusCode)
+	}
+
+	return nil
 }
