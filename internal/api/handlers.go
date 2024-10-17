@@ -78,6 +78,7 @@ func ListRepositories(c *gin.Context) {
 		return
 	}
 
+	//parse information from listRepoOnGitHub to retrieve as response
 	response_repo := make([]RepoPrint, len(repos))
 
 	for i, item := range repos {
@@ -88,6 +89,7 @@ func ListRepositories(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response_repo)
+
 }
 
 func listRepoOnGitHub(token string) ([]map[string]interface{}, error) {
