@@ -16,6 +16,7 @@ func setupRouter() *gin.Engine {
 	r := gin.Default()
 	r.POST("/repositories", CreateRepository)
 	r.GET("/repositories", ListRepositories)
+	r.DELETE("/repositories/:owner/:repo", DeleteRepository)
 	return r
 }
 
@@ -148,5 +149,71 @@ func TestListRepositories(t *testing.T) {
 		var errorResponse map[string]string
 		json.Unmarshal(resp.Body.Bytes(), &errorResponse)
 		assert.Equal(t, "failed to get repositories: status code 500", errorResponse["error"])
+	})
+}
+
+func TestDeleteRepository(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := setupRouter()
+
+	httpmock.Activate()
+	t.Cleanup(httpmock.DeactivateAndReset)
+
+	t.Run("Successful Repository Deletion", func(t *testing.T) {
+
+		httpmock.RegisterResponder("DELETE", "https://api.github.com/repos/testuser/test-repo",
+			httpmock.NewStringResponder(http.StatusNoContent, ``))
+
+		req, _ := http.NewRequest(http.MethodDelete, "/repositories/testuser/test-repo", nil)
+		req.Header.Set("Authorization", "Bearer your_github_token")
+
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusNoContent, resp.Code)
+	})
+
+	t.Run("Unauthorized (Missing Token)", func(t *testing.T) {
+		owner := "testuser"
+		repoName := "test-repo"
+
+		req, _ := http.NewRequest(http.MethodDelete, "/repositories/"+owner+"/"+repoName, nil)
+
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusUnauthorized, resp.Code)
+	})
+
+	t.Run("GitHub API Error", func(t *testing.T) {
+		owner := "testuser"
+		repoName := "test-repo"
+
+		httpmock.RegisterResponder("DELETE", "https://api.github.com/repos/"+owner+"/"+repoName,
+			httpmock.NewStringResponder(http.StatusInternalServerError, `{"error": "not found"}`))
+
+		req, _ := http.NewRequest(http.MethodDelete, "/repositories/"+owner+"/"+repoName, nil)
+		req.Header.Set("Authorization", "Bearer your_github_token")
+
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+	})
+
+	t.Run("Deletion with Incorrect Repo", func(t *testing.T) {
+		owner := "wronguser"
+		repoName := "wrong-repo"
+
+		httpmock.RegisterResponder("DELETE", "https://api.github.com/repos/"+owner+"/"+repoName,
+			httpmock.NewStringResponder(http.StatusNotFound, `{"error": "not found"}`))
+
+		req, _ := http.NewRequest(http.MethodDelete, "/repositories/"+owner+"/"+repoName, nil)
+		req.Header.Set("Authorization", "Bearer your_github_token")
+
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
 	})
 }
