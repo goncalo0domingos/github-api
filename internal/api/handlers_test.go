@@ -17,6 +17,7 @@ func setupRouter() *gin.Engine {
 	r.POST("/repositories", CreateRepository)
 	r.GET("/repositories", ListRepositories)
 	r.DELETE("/repositories/:owner/:repo", DeleteRepository)
+	r.GET("/repositories/:owner/:repo/pulls", ListOpenPullRequests)
 	return r
 }
 

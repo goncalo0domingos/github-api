@@ -163,3 +163,53 @@ func deleteRepoOnGithub(token, repoName, owner string) error {
 
 	return nil
 }
+
+func ListOpenPullRequests(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token required"})
+		return
+	}
+
+	owner := c.Param("owner")
+	repo := c.Param("repo")
+	PRCount, err := listOpenPullRequests(token, owner, repo)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"open_pull_requests": PRCount})
+}
+
+func listOpenPullRequests(token, owner, repo string) (int, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?state=open", owner, repo)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", token)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("failed to get pull requests: status code %d", resp.StatusCode)
+	}
+
+	var pulls []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&pulls); err != nil {
+		return 0, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return len(pulls), nil
+}
