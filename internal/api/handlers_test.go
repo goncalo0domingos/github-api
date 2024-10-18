@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -194,7 +195,7 @@ func TestDeleteRepository(t *testing.T) {
 			httpmock.NewStringResponder(http.StatusInternalServerError, `{"error": "not found"}`))
 
 		req, _ := http.NewRequest(http.MethodDelete, "/repositories/"+owner+"/"+repoName, nil)
-		req.Header.Set("Authorization", "Bearer your_github_token")
+		req.Header.Set("Authorization", "Bearer placeholder")
 
 		resp := httptest.NewRecorder()
 		router.ServeHTTP(resp, req)
@@ -216,5 +217,70 @@ func TestDeleteRepository(t *testing.T) {
 		router.ServeHTTP(resp, req)
 
 		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+	})
+}
+
+func TestListOpenPullRequests(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := setupRouter()
+
+	httpmock.Activate()
+	t.Cleanup(httpmock.DeactivateAndReset)
+	mock_repo := RepoPullRe{
+		Name:  "mock-repo",
+		Owner: "mock-user",
+		PullRequests: []PullRequest{
+			{Title: "Fix bug in feature X", Number: 1, State: "open"},
+			{Title: "Add new API endpoint", Number: 2, State: "open"},
+			{Title: "Improve documentation", Number: 3, State: "closed"},
+		},
+	}
+
+	t.Run("Sucessfully retrieving the number of pull requests", func(t *testing.T) {
+
+		pullRequestsJSON, err := json.MarshalIndent(mock_repo.PullRequests, "", "  ")
+		if err != nil {
+			fmt.Println("Error converting to JSON:", err)
+			return
+		}
+		httpmock.RegisterResponder("GET", "https://api.github.com/repos/testuser/test-repo/pulls",
+			httpmock.NewStringResponder(http.StatusOK, string(pullRequestsJSON)))
+
+		req, _ := http.NewRequest(http.MethodGet, "/repositories/testuser/test-repo/pulls", nil)
+		req.Header.Set("Authorization", "Bearer placeholder")
+
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusOK, resp.Code)
+
+		var response map[string]int
+		json.Unmarshal(resp.Body.Bytes(), &response)
+		assert.Equal(t, 3, response["open_pull_requests"])
+	})
+	t.Run("Unauthorized Request (Missing Token)", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/repositories/testuser/test-repo/pulls", nil)
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusUnauthorized, resp.Code)
+	})
+
+	t.Run("GitHub API Error", func(t *testing.T) {
+		httpmock.RegisterResponder("GET", "https://api.github.com/repos/testuser/test-repo/pulls?state=open",
+			httpmock.NewStringResponder(http.StatusInternalServerError, `{"message": "Internal Server Error"}`))
+
+		req, _ := http.NewRequest(http.MethodGet, "/repositories/testuser/test-repo/pulls", nil)
+		req.Header.Set("Authorization", "Bearer placeholder")
+
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusInternalServerError, resp.Code)
+
+		var response map[string]string
+		json.Unmarshal(resp.Body.Bytes(), &response)
+
+		assert.Equal(t, "failed to get pull requests: status code 500", response["error"])
 	})
 }

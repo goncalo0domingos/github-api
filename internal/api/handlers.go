@@ -210,6 +210,5 @@ func listOpenPullRequests(token, owner, repo string) (int, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&pulls); err != nil {
 		return 0, fmt.Errorf("failed to decode response: %w", err)
 	}
-
 	return len(pulls), nil
 }
