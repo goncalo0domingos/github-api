@@ -1,0 +1,25 @@
+version: '3'
+
+vars:
+  docker_image: goncalogdomingos/github-api:latest
+  deployment_file: deployment.yaml
+  service_file: service.yaml
+
+tasks:
+  deploy:
+    desc: Apply Kubernetes deployment and service files to Minikube
+    cmds:
+      - kubectl apply -f {{.deployment_file}}
+      - kubectl apply -f {{.service_file}}
+
+  status:
+    desc: Check the status of pods and services
+    cmds:
+      - kubectl get pods
+      - kubectl get svc
+
+  all:
+    desc: Run the full pipeline (build, load, deploy, status)
+    cmds:
+      - task: deploy
+      - task: status
