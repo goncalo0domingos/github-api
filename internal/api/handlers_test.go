@@ -48,7 +48,9 @@ func TestCreateRepository(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, resp.Code)
 
 		var createdRepo map[string]interface{}
-		json.Unmarshal(resp.Body.Bytes(), &createdRepo)
+		if err := json.Unmarshal(resp.Body.Bytes(), &createdRepo); err != nil {
+			fmt.Println(err)
+		}
 
 		assert.Equal(t, "test-repo", createdRepo["name"])
 	})
@@ -99,7 +101,9 @@ func TestCreateRepository(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, resp.Code) //erro 500
 
 		var errorResponse map[string]string
-		json.Unmarshal(resp.Body.Bytes(), &errorResponse)
+		if err := json.Unmarshal(resp.Body.Bytes(), &errorResponse); err != nil {
+			fmt.Println(err)
+		}
 		assert.Equal(t, "failed to create repository: status code 500", errorResponse["error"])
 	})
 }
@@ -153,7 +157,9 @@ func TestListRepositories(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, resp.Code)
 
 		var errorResponse map[string]string
-		json.Unmarshal(resp.Body.Bytes(), &errorResponse)
+		if err := json.Unmarshal(resp.Body.Bytes(), &errorResponse); err != nil {
+			fmt.Println(err)
+		}
 		assert.Equal(t, "Authorization token required", errorResponse["error"])
 	})
 
