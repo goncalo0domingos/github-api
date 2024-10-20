@@ -19,7 +19,7 @@ tasks:
       - kubectl get svc
 
   all:
-    desc: Run the full pipeline (build, load, deploy, status)
+    desc: Run the full pipeline
     cmds:
       - task: deploy
       - task: status
