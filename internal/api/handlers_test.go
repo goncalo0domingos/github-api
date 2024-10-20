@@ -85,7 +85,12 @@ func TestCreateRepository(t *testing.T) {
 		httpmock.RegisterResponder("POST", "https://api.github.com/user/repos",
 			httpmock.NewStringResponder(http.StatusInternalServerError, `{"error": "failed to create repository: status code 500"}`))
 
-		req, _ := http.NewRequest(http.MethodPost, "/repositories", nil)
+		repo := map[string]string{
+			"name": "test-repo",
+		}
+		jsonValue, _ := json.Marshal(repo)
+
+		req, _ := http.NewRequest(http.MethodPost, "/repositories", bytes.NewBuffer(jsonValue))
 		req.Header.Set("Authorization", "Bearer placeholder")
 
 		resp := httptest.NewRecorder()
@@ -95,7 +100,7 @@ func TestCreateRepository(t *testing.T) {
 
 		var errorResponse map[string]string
 		json.Unmarshal(resp.Body.Bytes(), &errorResponse)
-		assert.Equal(t, "failed to get repositories: status code 500", errorResponse["error"])
+		assert.Equal(t, "failed to create repository: status code 500", errorResponse["error"])
 	})
 }
 
@@ -153,7 +158,7 @@ func TestListRepositories(t *testing.T) {
 	})
 
 	t.Run("GitHub API Failure", func(t *testing.T) {
-		httpmock.RegisterResponder("POST", "https://api.github.com/user/repos",
+		httpmock.RegisterResponder("GET", "https://api.github.com/user/repos",
 			httpmock.NewStringResponder(http.StatusInternalServerError, `{"message": "Internal Server Error"}`))
 
 		req, _ := http.NewRequest(http.MethodGet, "/repositories", nil)
