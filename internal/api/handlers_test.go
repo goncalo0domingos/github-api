@@ -176,7 +176,9 @@ func TestListRepositories(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, resp.Code) //erro 500
 
 		var errorResponse map[string]string
-		json.Unmarshal(resp.Body.Bytes(), &errorResponse)
+		if err := json.Unmarshal(resp.Body.Bytes(), &errorResponse); err != nil {
+			fmt.Println(err)
+		}
 		assert.Equal(t, "failed to get repositories: status code 500", errorResponse["error"])
 	})
 }
@@ -282,7 +284,9 @@ func TestListOpenPullRequests(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.Code)
 
 		var response map[string]int
-		json.Unmarshal(resp.Body.Bytes(), &response)
+		if err := json.Unmarshal(resp.Body.Bytes(), &response); err != nil {
+			fmt.Println(err)
+		}
 		assert.Equal(t, 3, response["open_pull_requests"])
 	})
 	t.Run("Unauthorized Request (Missing Token)", func(t *testing.T) {
@@ -306,7 +310,9 @@ func TestListOpenPullRequests(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, resp.Code)
 
 		var response map[string]string
-		json.Unmarshal(resp.Body.Bytes(), &response)
+		if err := json.Unmarshal(resp.Body.Bytes(), &response); err != nil {
+			fmt.Println(err)
+		}
 
 		assert.Equal(t, "failed to get pull requests: status code 500", response["error"])
 	})
