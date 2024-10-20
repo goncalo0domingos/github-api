@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-api-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: github-api
+  template:
+    metadata:
+      labels:
+        app: github-api
+    spec:
+      containers:
+        - name: github-api
+          image: goncalogdomingos/github-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080

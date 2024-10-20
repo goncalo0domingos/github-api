@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	r := gin.Default() // Initialize Gin router
+	r := gin.Default()
 
 	// Set up the POST /repositories endpoint
 	r.POST("/repositories", api.CreateRepository)

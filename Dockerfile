@@ -1,23 +1,25 @@
 FROM golang:1.23-alpine AS builder
 
+#criar diretoria da aplicação
 WORKDIR /app
 
-
-COPY . .
+# copiar todos os files e vai buscar as dependencias dentro do go mod e faz build do projeto
+COPY . . 
 RUN go mod download
-RUN go build -o main .
+RUN go build -o main cmd/server/main.go
 
-# Start a new minimal image
+
+# outra image 
 FROM alpine:latest
+#tirar Gin do modo debug
+ENV GIN_MODE release
 
-# Set the working directory in the new image
+#make e cd da root
 WORKDIR /root/
 
-# Copy the compiled binary from the builder stage
+#copiar files de uma image para outra
 COPY --from=builder /app/main .
 
-# Expose port 8080
+#definir port e correr aplicação
 EXPOSE 8080
-
-# Command to run the application
 CMD ["./main"]
