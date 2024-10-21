@@ -8,6 +8,7 @@ tasks:
   deploy:
     desc: Apply Kubernetes deployment and service files to Minikube
     cmds:
+      - minikube start
       - kubectl apply -f {{.deployment_file}}
       - kubectl apply -f {{.service_file}}
 
