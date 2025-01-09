@@ -1,0 +1,21 @@
+name: testing
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  command-runner:
+    name: run-branch-name
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: List branch name
+        run: echo Branch is ${{ github.head_ref }}
