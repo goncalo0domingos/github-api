@@ -18,4 +18,4 @@ jobs:
         uses: actions/checkout@v3
 
       - name: List branch name
-        run: echo Branch is ${{ github.head_ref }}
+        run: echo DOCKER_USERNAME IS ${{ github.head_ref }}
